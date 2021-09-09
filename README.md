@@ -15,7 +15,9 @@ Let's say you want to pull the production environment to your local machine as a
 `$ export DATABASE_URL=postgres://projman`
 1. In the code, set te `PROD` to `false`.
 3. Do whatever testing
-4. Push?
+4. Push the database to heroku\
+`$ heroku pg:push projman DATABASE_URL --app rtd-project-management`\
+You might have to run `$ heroku pg:reset` before pushing.
 1. In the code, set te `PROD` back to `true`.
 
 ## Miscellaneous
@@ -23,3 +25,40 @@ Let's say you want to pull the production environment to your local machine as a
 `$ heroku config:get DATABASE_URL -a rtd-project-management`
 - Run the local server with a connection to the production databse\
 `$ DATABASE_URL=$(heroku config:get DATABASE_URL -a rtd-project-management) npm start`
+
+## Database structure
+### Primitive Tables
+- user_accounts
+	- id
+	- username
+	- password_hash
+	- password_salt 
+	- name
+- user_data
+	- TODO
+- proejcts
+	- id
+	- name
+	- owner_user_id
+- tickets
+	- id
+	- project_id
+	- created_user_id
+	- index_in_project
+- metric (progress, priority etc.)
+	- id
+	- project_id
+	- title
+- metric_option (todo, ongoing, priority 1, priority 2 etc.)
+	- id
+	- metric id
+	- index_in_metric
+	- option_string
+---
+### Relational Tables
+- user_project
+	- user_id
+	- project_id
+- ticket_asignees
+	- ticket_id
+	- assignee_user_id

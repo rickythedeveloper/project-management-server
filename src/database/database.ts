@@ -1,6 +1,6 @@
 import { Pool, QueryConfig } from 'pg';
 import { PROD } from '../constants';
-import { OurQueryResultRow, UserProject, OmitID, UserAccount, Table } from './tables';
+import { OurQueryResultRow, UserProject, OmitID, UserAccount, Table, Project } from './tables';
 
 const pool = new Pool({
 	connectionString: process.env.DATABASE_URL,
@@ -16,6 +16,11 @@ async function makeDatabaseQuery<R extends OurQueryResultRow, I extends any[] = 
 	return result.rows;
 }
 
+const checkForOne = <T extends OurQueryResultRow>(rows: T[], title :string): T => {
+	if (rows.length !== 1) throw new Error(`More than one ${title} has been created at once`);
+	return rows[0];
+};
+
 export const getAllUserProjects = async (): Promise<UserProject[]> => makeDatabaseQuery('SELECT * FROM user_projects');
 
 export const addUser = async (user: OmitID<UserAccount>): Promise<UserAccount> => {
@@ -28,7 +33,43 @@ export const addUser = async (user: OmitID<UserAccount>): Promise<UserAccount> =
 	};
 
 	const result = await makeDatabaseQuery<UserAccount>(query);
+	const newUser = checkForOne(result, 'user');
+	return newUser;
+};
 
-	if (result.length !== 1) throw new Error('newUsers.length !== 1');
-	return result[0];
+const addUserProjectPair = async (user_id: number, project_id: number): Promise<UserProject> => {
+	const userProjectPairQuery: QueryConfig = {
+		text: `
+			INSERT INTO ${Table[Table.user_projects]} (user_id, project_id)
+			VALUES ($1, $2) RETURNING *
+		`,
+		values: [user_id, project_id],
+	};
+	const newPairs = await makeDatabaseQuery<UserProject>(userProjectPairQuery);
+	const newPair = checkForOne(newPairs, 'user-project pair');
+	return newPair;
+};
+
+const addProject = async (project: OmitID<Project>): Promise<Project> => {
+	const query: QueryConfig = {
+		text: `
+			INSERT INTO ${Table[Table.projects]} (name, owner_user_id) 
+			VALUES ($1, $2) RETURNING *
+		`,
+		values: [project.name, project.owner_user_id],
+	};
+	const newProjects = await makeDatabaseQuery<Project>(query);
+	const newProject = checkForOne(newProjects, 'project');
+	return newProject;
+};
+
+export const addProjectToUser = async (project: OmitID<Project>): Promise<Project> => {
+	const newProject = await addProject(project);
+	try {
+		await addUserProjectPair(newProject.owner_user_id, newProject.id);
+	} catch (error) {
+		// TODO remove that project before throwing the error.
+		throw Error('Could not add a user-project pair to the database, so deleting the new project altogether');
+	}
+	return newProject;
 };

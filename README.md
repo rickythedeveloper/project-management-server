@@ -40,11 +40,13 @@ You might have to run `$ heroku pg:reset` before pushing.
 	- id
 	- name
 	- owner_user_id
+	- highest_index
 - tickets
 	- id
 	- project_id
 	- created_user_id
 	- index_in_project
+	- name
 - metric (progress, priority etc.)
 	- id
 	- project_id

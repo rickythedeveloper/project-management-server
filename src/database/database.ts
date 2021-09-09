@@ -1,6 +1,6 @@
 import { Pool, QueryConfig } from 'pg';
 import { PROD } from '../constants';
-import { OurQueryResultRow, UserProject, OmitID, UserAccount, Table, Project } from './tables';
+import { OurQueryResultRow, UserProject, OmitID, UserAccount, Table, Project, Ticket } from './tables';
 
 const pool = new Pool({
 	connectionString: process.env.DATABASE_URL,
@@ -17,7 +17,7 @@ async function makeDatabaseQuery<R extends OurQueryResultRow, I extends any[] = 
 }
 
 const checkForOne = <T extends OurQueryResultRow>(rows: T[], title :string): T => {
-	if (rows.length !== 1) throw new Error(`More than one ${title} has been created at once`);
+	if (rows.length !== 1) throw new Error(`There should only be ${title}`);
 	return rows[0];
 };
 
@@ -72,4 +72,41 @@ export const addProjectToUser = async (project: OmitID<Project>): Promise<Projec
 		throw Error('Could not add a user-project pair to the database, so deleting the new project altogether');
 	}
 	return newProject;
+};
+
+const getHighestIndexInProject = async (projectID: number): Promise<number> => {
+	const query: QueryConfig = {
+		text: `
+			SELECT highest_index FROM projects WHERE id=$1
+		`,
+		values: [projectID],
+	};
+	const rows = await makeDatabaseQuery<{ highest_index: number }>(query);
+	const row = checkForOne(rows, 'highest index');
+	return row.highest_index;
+};
+
+const incrementHighestIndexInProject = async (projectID: number): Promise<void> => {
+	const query: QueryConfig = {
+		text: `
+			UPDATE projects SET highest_index = highest_index + 1 WHERE id=$1
+		`,
+		values: [projectID],
+	};
+	await makeDatabaseQuery(query);
+};
+
+export const addTicketToProject = async (ticket: Omit<Ticket, 'id' | 'index_in_project'>): Promise<Ticket> => {
+	const highestIndex = await getHighestIndexInProject(ticket.project_id);
+	const query: QueryConfig = {
+		text: `
+		INSERT INTO ${Table[Table.tickets]} (project_id, created_user_id, index_in_project, title)
+		VALUES ($1, $2, $3, $4) RETURNING *
+		`,
+		values: [ticket.project_id, ticket.created_user_id, highestIndex + 1, ticket.title],
+	};
+	const rows = await makeDatabaseQuery<Ticket>(query);
+	const newTicket = checkForOne(rows, 'new ticket');
+	await incrementHighestIndexInProject(ticket.project_id);
+	return newTicket;
 };

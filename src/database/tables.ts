@@ -23,6 +23,7 @@ export interface Project {
 	id: number;
 	name: string;
 	owner_user_id: number;
+	highest_index: number;
 }
 
 export interface Ticket {
@@ -30,6 +31,7 @@ export interface Ticket {
 	project_id: number;
 	created_user_id: number;
 	index_in_project: number;
+	title: string;
 }
 
 export interface Metric {
@@ -55,5 +57,5 @@ export interface TicketAssignee {
 	assignee_user_id: number;
 }
 
-export type OurQueryResultRow = UserAccount | Project | Ticket | Metric | MetricOption | UserProject | TicketAssignee;
+export type OurQueryResultRow = UserAccount | Project | Ticket | Metric | MetricOption | UserProject | TicketAssignee | { [column: string]: string } | { [column: string]: number };
 export type OmitID<T> = Omit<T, 'id'>;

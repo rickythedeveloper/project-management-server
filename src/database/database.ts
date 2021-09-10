@@ -55,6 +55,8 @@ export const addUser = async (user: OmitID<UserAccount>): Promise<UserAccount> =
 };
 
 export const addProjectToUser = async (project: OmitID<Project>): Promise<{ project: Project; userProject: UserProject }> => {
+	if (!await rowWithIDExists(Table.user_accounts, project.owner_user_id)) throw new Error('Cannot add a project to a non-existent user.');
+
 	return makeMultiQuery(async (client) => {
 		const addProjectQuery: QueryConfig = {
 			text: `INSERT INTO ${Table[Table.projects]} (name, owner_user_id)  VALUES ($1, $2) RETURNING *`,

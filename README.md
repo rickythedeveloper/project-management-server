@@ -59,11 +59,11 @@ You might have to run `$ heroku pg:reset` before pushing.
 	- created_user_id
 	- index_in_project
 	- title
-- metric (progress, priority etc.)
+- metrics (progress, priority etc.)
 	- id
 	- project_id
 	- title
-- metric_option (todo, ongoing, priority 1, priority 2 etc.)
+- metric_options (todo, ongoing, priority 1, priority 2 etc.)
 	- id
 	- metric id
 	- index_in_metric

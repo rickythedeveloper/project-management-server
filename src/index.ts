@@ -1,6 +1,6 @@
-import express from 'express';
-import { getAllUserProjects, addUser, addProjectToUser, addTicketToProject } from './database/database';
-import { OmitID, Project, UserAccount, Ticket } from './database/tables';
+import express, { Response } from 'express';
+import { getAllUserProjects, addUser, addProjectToUser, addTicketToProject, addMetricToProject } from './database/database';
+import { OmitID, Project, UserAccount, Ticket, Metric } from './database/tables';
 import { PORT } from './constants';
 
 const app = express();
@@ -11,6 +11,18 @@ app.get('/', (req, res) => {
 	res.send('Hello World');
 });
 
+interface APISuccessResponse {
+	isSuccessful: true;
+	result: any;
+}
+
+interface APIErrorResponse {
+	isSuccessful: false;
+	error: unknown;
+}
+
+type APIResponse = APISuccessResponse | APIErrorResponse;
+
 app.get('/apitest', async (req, res) => {
 	try {
 		const results = await getAllUserProjects();
@@ -20,7 +32,7 @@ app.get('/apitest', async (req, res) => {
 	}
 });
 
-app.post('/addUser', async (req, res) => {
+app.post('/addUser', async (req, res: Response<APIResponse>) => {
 	try {
 		const newUser: OmitID<UserAccount> = req.body;
 		const addedUser = await addUser(newUser);
@@ -30,7 +42,7 @@ app.post('/addUser', async (req, res) => {
 	}
 });
 
-app.post('/projects', async (req, res) => {
+app.post('/projects', async (req, res: Response<APIResponse>) => {
 	try {
 		const project: OmitID<Project> = req.body;
 		const addedProject = await addProjectToUser(project);
@@ -40,11 +52,21 @@ app.post('/projects', async (req, res) => {
 	}
 });
 
-app.post('/tickets', async (req, res) => {
+app.post('/tickets', async (req, res: Response<APIResponse>) => {
 	try {
 		const ticket: Omit<Ticket, 'id' | 'index_in_project'> = req.body;
 		const addedTicket = await addTicketToProject(ticket);
 		res.json({ isSuccessful: true, result: addedTicket });
+	} catch (error) {
+		res.json({ isSuccessful: false, error: error });
+	}
+});
+
+app.post('/metrics', async (req, res: Response<APIResponse>) => {
+	try {
+		const metric: OmitID<Metric> = req.body;
+		const addedMetric = await addMetricToProject(metric);
+		res.json({ isSuccessful: true, result: addedMetric });
 	} catch (error) {
 		res.json({ isSuccessful: false, error: error });
 	}
@@ -62,6 +84,9 @@ app.listen(PORT, () => {
 
 		To add a ticket to a project, try the following
 		curl -d "project_id=3&created_user_id=1&title=some ticket man" -X POST http://localhost:${PORT}/tickets
+
+		To add a metric to a project, try the following
+		curl -d "project_id=3&title=some metric" -X POST http://localhost:${PORT}/metrics
 	`);
 });
 

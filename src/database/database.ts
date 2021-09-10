@@ -1,6 +1,6 @@
 import { Pool, QueryConfig } from 'pg';
 import { PROD } from '../constants';
-import { OurQueryResultRow, UserProject, OmitID, UserAccount, Table, Project, Ticket } from './tables';
+import { OurQueryResultRow, UserProject, OmitID, UserAccount, Table, Project, Ticket, Metric } from './tables';
 
 const pool = new Pool({
 	connectionString: process.env.DATABASE_URL,
@@ -109,4 +109,17 @@ export const addTicketToProject = async (ticket: Omit<Ticket, 'id' | 'index_in_p
 	const newTicket = checkForOne(rows, 'new ticket');
 	await incrementHighestIndexInProject(ticket.project_id);
 	return newTicket;
+};
+
+export const addMetricToProject = async (metric: OmitID<Metric>): Promise<Metric> => {
+	const query: QueryConfig = {
+		text: `
+			INSERT INTO ${Table[Table.metrics]} (project_id, title)
+			VALUES ($1, $2) RETURNING *
+		`,
+		values: [metric.project_id, metric.title],
+	};
+	const rows = await makeDatabaseQuery<Metric>(query);
+	const newMetric = checkForOne(rows, 'new metric');
+	return newMetric;
 };

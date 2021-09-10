@@ -1,7 +1,7 @@
 import { UserAccount, OmitID } from '../database/structure';
 import { addUser, deleteUser, updateUser, getUser, getUsers } from '../database/functions/users';
 import { Request, Response } from 'express';
-import { PostResponse, DeleteResponse, PutResponse, GetResponse } from '..';
+import { PostResponse, DeleteResponse, PutResponse, GetResponse } from '.';
 
 export const post = async (
 	req: Request<{}, PostResponse<UserAccount>, OmitID<UserAccount>>,
@@ -43,7 +43,7 @@ export const put = async (
 	}
 };
 
-export const getAll = async (res: Response<GetResponse<UserAccount[]>>) => {
+export const getAll = async (req: Request, res: Response<GetResponse<UserAccount[]>>) => {
 	try {
 		const users = await getUsers();
 		res.json({ isSuccessful: true, result: users });

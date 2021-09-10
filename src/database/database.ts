@@ -1,4 +1,4 @@
-import { Pool, QueryConfig } from 'pg';
+import { Pool, QueryConfig, PoolClient } from 'pg';
 import { PROD } from '../constants';
 import { OurQueryResultRow, UserProject, OmitID, UserAccount, Table, Project, Ticket, Metric, MetricOption, TicketAssignee } from './tables';
 
@@ -6,15 +6,6 @@ const pool = new Pool({
 	connectionString: process.env.DATABASE_URL,
 	ssl: PROD ? { rejectUnauthorized: false } : false,
 });
-
-async function makeDatabaseQuery<R extends OurQueryResultRow, I extends any[] = any[]>(
-	queryTextOrConfig: string | QueryConfig<I>, values?: I,
-): Promise<R[]> {
-	const client = await pool.connect();
-	const result = await client.query<R, I>(queryTextOrConfig, values);
-	client.release();
-	return result.rows;
-}
 
 const checkForOne = <T extends OurQueryResultRow>(rows: T[], title :string): T => {
 	if (rows.length !== 1) throw new Error(`There should only be ${title}`);
@@ -30,7 +21,25 @@ const rowWithIDExists = async (table: Table, id: number): Promise<boolean> => {
 	return results.rows.length === 1;
 };
 
-export const getAllUserProjects = async (): Promise<UserProject[]> => makeDatabaseQuery('SELECT * FROM user_projects');
+const makeMultiQuery = async <T>(queries: (client: PoolClient) => Promise<T>): Promise<T> => {
+	const client = await pool.connect();
+	try {
+		await client.query('BEGIN');
+		const returnObject = await queries(client);
+		await client.query('COMMIT');
+		return returnObject;
+	} catch (error) {
+		await client.query('ROLLBACK');
+		throw error;
+	} finally {
+		client.release();
+	}
+};
+
+export const getAllUserProjects = async (): Promise<UserProject[]> => {
+	const results = await pool.query<UserProject>('SELECT * FROM user_projects');
+	return results.rows;
+};
 
 export const addUser = async (user: OmitID<UserAccount>): Promise<UserAccount> => {
 	const query: QueryConfig = {
@@ -46,11 +55,7 @@ export const addUser = async (user: OmitID<UserAccount>): Promise<UserAccount> =
 };
 
 export const addProjectToUser = async (project: OmitID<Project>): Promise<{ project: Project; userProject: UserProject }> => {
-	const client = await pool.connect();
-
-	try {
-		await client.query('BEGIN');
-
+	return makeMultiQuery(async (client) => {
 		const addProjectQuery: QueryConfig = {
 			text: `INSERT INTO ${Table[Table.projects]} (name, owner_user_id)  VALUES ($1, $2) RETURNING *`,
 			values: [project.name, project.owner_user_id],
@@ -65,34 +70,24 @@ export const addProjectToUser = async (project: OmitID<Project>): Promise<{ proj
 		const userProjectResults = await client.query<UserProject>(addUserProjectQuery);
 		const newUserProject = checkForOne(userProjectResults.rows, 'new user-project pair');
 
-		await client.query('COMMIT');
 		return { project: newProject, userProject: newUserProject };
-	} catch (error) {
-		await client.query('ROLLBACK');
-		throw error;
-	} finally {
-		client.release();
-	}
+	});
 };
 
 export const addTicketToProject = async (ticket: Omit<Ticket, 'id' | 'index_in_project'>): Promise<Ticket> => {
-	const client = await pool.connect();
-
-	try {
-		await client.query('BEGIN');
-
+	return makeMultiQuery(async (client) => {
 		const getHighestIndexInProjectQuery: QueryConfig = {
 			text: 'SELECT highest_index FROM projects WHERE id=$1',
 			values: [ticket.project_id],
 		};
-		const highestIndexResults = await client.query(getHighestIndexInProjectQuery);
-		const highestIndex = checkForOne(highestIndexResults.rows, 'highest index in project');
+		const highestIndexResults = await client.query<Pick<Project, 'highest_index'>>(getHighestIndexInProjectQuery);
+		const highestIndex = checkForOne(highestIndexResults.rows, 'highest index in project').highest_index;
 
 		const addTicketQuery: QueryConfig = {
 			text: `INSERT INTO ${Table[Table.tickets]} (project_id, created_user_id, index_in_project, title) VALUES ($1, $2, $3, $4) RETURNING *`,
 			values: [ticket.project_id, ticket.created_user_id, highestIndex + 1, ticket.title],
 		};
-		const ticketResults = await client.query(addTicketQuery);
+		const ticketResults = await client.query<Ticket>(addTicketQuery);
 		const addedTicket = checkForOne(ticketResults.rows, 'new ticket');
 
 		const incrementHighestIndexInProjectQuery: QueryConfig = {
@@ -100,15 +95,8 @@ export const addTicketToProject = async (ticket: Omit<Ticket, 'id' | 'index_in_p
 			values: [ticket.project_id],
 		};
 		await client.query(incrementHighestIndexInProjectQuery);
-
-		await client.query('COMMIT');
 		return addedTicket;
-	} catch (error) {
-		await client.query('ROLLBACK');
-		throw error;
-	} finally {
-		client.release();
-	}
+	});
 };
 
 export const addMetricToProject = async (metric: OmitID<Metric>): Promise<Metric> => {
@@ -125,39 +113,27 @@ export const addMetricOptionToMetric = async (metricOption: Omit<MetricOption, '
 	if (!await rowWithIDExists(Table.metrics, metricOption.metric_id))
 		throw new Error('Could not add an option to a metric that does not exist. Check metric_option.metric_id.');
 
-	const client = await pool.connect();
-
-	try {
-		await client.query('BEGIN');
-
+	return makeMultiQuery(async (client) => {
 		const getHighestIndexQuery: QueryConfig = {
 			text: `SELECT index_in_metric FROM ${Table[Table.metric_options]} WHERE metric_id=$1`,
 			values: [metricOption.metric_id],
 		};
-		const results = await pool.query<Pick<MetricOption, 'index_in_metric'>>(getHighestIndexQuery);
+		const results = await client.query<Pick<MetricOption, 'index_in_metric'>>(getHighestIndexQuery);
 		const indices = results.rows.map(row => row.index_in_metric);
 		if (indices.length === 0) throw new Error('A metric with the specified id could not be found.');
 		const highestIndex = Math.max(...indices);
 
 		const addMetricOptionQuery: QueryConfig = {
 			text: `
-				INSERT INTO ${Table[Table.metric_options]} (metric_id, index_in_metric, option_string)
-				VALUES ($1, $2, $3) RETURNING *
-			`,
+					INSERT INTO ${Table[Table.metric_options]} (metric_id, index_in_metric, option_string)
+					VALUES ($1, $2, $3) RETURNING *
+				`,
 			values: [metricOption.metric_id, highestIndex ? highestIndex + 1 : 1, metricOption.option_string],
 		};
 		const metricOptionResults = await client.query<MetricOption>(addMetricOptionQuery);
 		const newMetricOption = checkForOne(metricOptionResults.rows, 'new metric option');
-
-		await client.query('COMMIT');
 		return newMetricOption;
-
-	} catch (error) {
-		await client.query('ROLLBACK');
-		throw error;
-	} finally {
-		client.release();
-	}
+	});
 };
 
 export const addAssigneeToTicket = async (ticketAssignee: TicketAssignee) => {
@@ -171,7 +147,7 @@ export const addAssigneeToTicket = async (ticketAssignee: TicketAssignee) => {
 		text: `INSERT INTO ${Table[Table.ticket_assignees]} (ticket_id, assignee_user_id) VALUES ($1, $2) RETURNING *;`,
 		values: [ticketAssignee.ticket_id, ticketAssignee.assignee_user_id],
 	};
-	const results = await pool.query(query);
+	const results = await pool.query<TicketAssignee>(query);
 	const newPair = checkForOne(results.rows, 'new ticket assignee pair');
 	return newPair;
 };

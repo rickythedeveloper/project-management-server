@@ -13,11 +13,7 @@ const checkForOne = <T extends OurQueryResultRow>(rows: T[], title :string): T =
 };
 
 const rowWithIDExists = async (table: Table, id: number): Promise<boolean> => {
-	const query: QueryConfig = {
-		text: `SELECT * FROM ${Table[table]} WHERE id=$1`,
-		values: [id],
-	};
-	const results = await pool.query(query);
+	const results = await pool.query(`SELECT * FROM ${Table[table]} WHERE id=$1`, [id]);
 	return results.rows.length === 1;
 };
 
@@ -42,14 +38,10 @@ export const getAllUserProjects = async (): Promise<UserProject[]> => {
 };
 
 export const addUser = async (user: OmitID<UserAccount>): Promise<UserAccount> => {
-	const query: QueryConfig = {
-		text: `
-			INSERT INTO ${Table[Table.user_accounts]} (username, password_salt, password_hash, name) 
-			VALUES ($1, $2, $3, $4) RETURNING *
-		`,
-		values: [user.username, user.password_salt, user.password_hash, user.name],
-	};
-	const results = await pool.query<UserAccount>(query);
+	const results = await pool.query<UserAccount>(
+		`INSERT INTO ${Table[Table.user_accounts]} (username, password_salt, password_hash, name) VALUES ($1, $2, $3, $4) RETURNING *`,
+		[user.username, user.password_salt, user.password_hash, user.name],
+	);
 	const addedUserAccount = checkForOne(results.rows, 'new user account');
 	return addedUserAccount;
 };
@@ -60,7 +52,10 @@ const addUserProjectPair = async (user_id: number, project_id: number, existingC
 	const combinationCheckResults = await client.query(`SELECT FROM ${Table[Table.user_projects]} WHERE user_id=$1 AND project_id=$2`, [user_id, project_id]);
 	if (combinationCheckResults.rows.length !== 0) throw new Error('Cannot add a user-project pair that already exists');
 
-	const addPairResult = await client.query<UserProject>(`INSERT INTO ${Table[Table.user_projects]} (user_id, project_id) VALUES ($1, $2) RETURNING *`, [user_id, project_id]);
+	const addPairResult = await client.query<UserProject>(
+		`INSERT INTO ${Table[Table.user_projects]} (user_id, project_id) VALUES ($1, $2) RETURNING *`,
+		[user_id, project_id],
+	);
 	const newUserProject = checkForOne(addPairResult.rows, 'new user-project pair');
 	return newUserProject;
 };
@@ -73,11 +68,10 @@ export const addProjectToUser = async (project: OmitID<Project>): Promise<{ proj
 	if (projectNames.indexOf(project.name) !== -1) throw new Error('Cannot add a project of the same name for the same user');
 
 	return makeMultiQuery(async (client) => {
-		const addProjectQuery: QueryConfig = {
-			text: `INSERT INTO ${Table[Table.projects]} (name, owner_user_id)  VALUES ($1, $2) RETURNING *`,
-			values: [project.name, project.owner_user_id],
-		};
-		const projectResults = await client.query<Project>(addProjectQuery);
+		const projectResults = await client.query<Project>(
+			`INSERT INTO ${Table[Table.projects]} (name, owner_user_id)  VALUES ($1, $2) RETURNING *`,
+			[project.name, project.owner_user_id],
+		);
 		const newProject = checkForOne(projectResults.rows, 'new proejct');
 
 		const newUserProject = await addUserProjectPair(newProject.owner_user_id, newProject.id, client);
@@ -90,19 +84,17 @@ export const addTicketToProject = async (ticket: Omit<Ticket, 'id' | 'index_in_p
 	if (!await rowWithIDExists(Table.user_accounts, ticket.created_user_id)) throw new Error('Cannot add a ticket to a non-existent user');
 
 	return makeMultiQuery(async (client) => {
-		const getTicketIndicesQuery: QueryConfig = {
-			text: `SELECT index_in_project FROM ${Table[Table.tickets]} WHERE project_id=$1`,
-			values: [ticket.project_id],
-		};
-		const ticketIndexResults = await client.query<Pick<Ticket, 'index_in_project'>>(getTicketIndicesQuery);
+		const ticketIndexResults = await client.query<Pick<Ticket, 'index_in_project'>>(
+			`SELECT index_in_project FROM ${Table[Table.tickets]} WHERE project_id=$1`,
+			[ticket.project_id],
+		);
 		const ticketIndices = ticketIndexResults.rows.map(row => row.index_in_project);
 		const highestTicketIndex: null | number = ticketIndices.length === 0 ? null : Math.max(...ticketIndices);
 
-		const addTicketQuery: QueryConfig = {
-			text: `INSERT INTO ${Table[Table.tickets]} (project_id, created_user_id, index_in_project, title) VALUES ($1, $2, $3, $4) RETURNING *`,
-			values: [ticket.project_id, ticket.created_user_id, highestTicketIndex ? highestTicketIndex + 1 : 1, ticket.title],
-		};
-		const ticketResults = await client.query<Ticket>(addTicketQuery);
+		const ticketResults = await client.query<Ticket>(
+			`INSERT INTO ${Table[Table.tickets]} (project_id, created_user_id, index_in_project, title) VALUES ($1, $2, $3, $4) RETURNING *`,
+			[ticket.project_id, ticket.created_user_id, highestTicketIndex ? highestTicketIndex + 1 : 1, ticket.title],
+		);
 		const addedTicket = checkForOne(ticketResults.rows, 'new ticket');
 		return addedTicket;
 	});
@@ -111,15 +103,17 @@ export const addTicketToProject = async (ticket: Omit<Ticket, 'id' | 'index_in_p
 export const addMetricToProject = async (metric: OmitID<Metric>): Promise<Metric> => {
 	if (!await rowWithIDExists(Table.projects, metric.project_id)) throw new Error('Cannot add a metric to a non-existent project');
 
-	const metricNameResults = await pool.query<Pick<Metric, 'title'>>(`SELECT title FROM ${Table[Table.metrics]} WHERE project_id=$1`, [metric.project_id]);
+	const metricNameResults = await pool.query<Pick<Metric, 'title'>>(
+		`SELECT title FROM ${Table[Table.metrics]} WHERE project_id=$1`,
+		[metric.project_id],
+	);
 	const metricNames = metricNameResults.rows.map(row => row.title);
 	if (metricNames.indexOf(metric.title) !== -1) throw new Error('Cannot add a metric of the same name to the same project');
 
-	const query: QueryConfig = {
-		text: `INSERT INTO ${Table[Table.metrics]} (project_id, title) VALUES ($1, $2) RETURNING *`,
-		values: [metric.project_id, metric.title],
-	};
-	const results = await pool.query<Metric>(query);
+	const results = await pool.query<Metric>(
+		`INSERT INTO ${Table[Table.metrics]} (project_id, title) VALUES ($1, $2) RETURNING *`,
+		[metric.project_id, metric.title],
+	);
 	const newMetric = checkForOne(results.rows, 'new metric');
 	return newMetric;
 };
@@ -129,23 +123,18 @@ export const addMetricOptionToMetric = async (metricOption: Omit<MetricOption, '
 		throw new Error('Could not add an option to a metric that does not exist. Check metric_option.metric_id.');
 
 	return makeMultiQuery(async (client) => {
-		const getHighestIndexQuery: QueryConfig = {
-			text: `SELECT index_in_metric FROM ${Table[Table.metric_options]} WHERE metric_id=$1`,
-			values: [metricOption.metric_id],
-		};
-		const results = await client.query<Pick<MetricOption, 'index_in_metric'>>(getHighestIndexQuery);
+		const results = await client.query<Pick<MetricOption, 'index_in_metric'>>(
+			`SELECT index_in_metric FROM ${Table[Table.metric_options]} WHERE metric_id=$1`,
+			[metricOption.metric_id],
+		);
 		const indices = results.rows.map(row => row.index_in_metric);
 		if (indices.length === 0) throw new Error('A metric with the specified id could not be found.');
 		const highestIndex = Math.max(...indices);
 
-		const addMetricOptionQuery: QueryConfig = {
-			text: `
-					INSERT INTO ${Table[Table.metric_options]} (metric_id, index_in_metric, option_string)
-					VALUES ($1, $2, $3) RETURNING *
-				`,
-			values: [metricOption.metric_id, highestIndex ? highestIndex + 1 : 1, metricOption.option_string],
-		};
-		const metricOptionResults = await client.query<MetricOption>(addMetricOptionQuery);
+		const metricOptionResults = await client.query<MetricOption>(
+			`INSERT INTO ${Table[Table.metric_options]} (metric_id, index_in_metric, option_string) VALUES ($1, $2, $3) RETURNING *`,
+			[metricOption.metric_id, highestIndex ? highestIndex + 1 : 1, metricOption.option_string],
+		);
 		const newMetricOption = checkForOne(metricOptionResults.rows, 'new metric option');
 		return newMetricOption;
 	});

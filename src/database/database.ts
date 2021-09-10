@@ -23,10 +23,7 @@ const checkForOne = <T extends OurQueryResultRow>(rows: T[], title :string): T =
 
 const rowWithIDExists = async (table: Table, id: number): Promise<boolean> => {
 	const query: QueryConfig = {
-		text: `
-			SELECT * FROM ${Table[table]}
-			WHERE id=$1
-		`,
+		text: `SELECT * FROM ${Table[table]} WHERE id=$1`,
 		values: [id],
 	};
 	const rows = await makeDatabaseQuery<Metric>(query);
@@ -88,9 +85,7 @@ export const addProjectToUser = async (project: OmitID<Project>): Promise<Projec
 
 const getHighestIndexInProject = async (projectID: number): Promise<number> => {
 	const query: QueryConfig = {
-		text: `
-			SELECT highest_index FROM projects WHERE id=$1
-		`,
+		text: 'SELECT highest_index FROM projects WHERE id=$1',
 		values: [projectID],
 	};
 	const rows = await makeDatabaseQuery<{ highest_index: number }>(query);
@@ -100,9 +95,7 @@ const getHighestIndexInProject = async (projectID: number): Promise<number> => {
 
 const incrementHighestIndexInProject = async (projectID: number): Promise<void> => {
 	const query: QueryConfig = {
-		text: `
-			UPDATE projects SET highest_index = highest_index + 1 WHERE id=$1
-		`,
+		text: 'UPDATE projects SET highest_index = highest_index + 1 WHERE id=$1',
 		values: [projectID],
 	};
 	await makeDatabaseQuery(query);
@@ -112,8 +105,8 @@ export const addTicketToProject = async (ticket: Omit<Ticket, 'id' | 'index_in_p
 	const highestIndex = await getHighestIndexInProject(ticket.project_id);
 	const query: QueryConfig = {
 		text: `
-		INSERT INTO ${Table[Table.tickets]} (project_id, created_user_id, index_in_project, title)
-		VALUES ($1, $2, $3, $4) RETURNING *
+			INSERT INTO ${Table[Table.tickets]} (project_id, created_user_id, index_in_project, title)
+			VALUES ($1, $2, $3, $4) RETURNING *
 		`,
 		values: [ticket.project_id, ticket.created_user_id, highestIndex + 1, ticket.title],
 	};

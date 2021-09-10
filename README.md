@@ -53,39 +53,57 @@ You can try the following to simulate requests.
 
 ## Database structure
 ### Primitive Tables
-- user_accounts
-	- id
-	- username
-	- password_hash
-	- password_salt 
-	- name
-- user_data
-	- TODO
-- proejcts
-	- id
-	- name
-	- owner_user_id
-	- highest_index
-- tickets
-	- id
-	- project_id
-	- created_user_id
-	- index_in_project
-	- title
-- metrics (progress, priority etc.)
-	- id
-	- project_id
-	- title
-- metric_options (todo, ongoing, priority 1, priority 2 etc.)
-	- id
-	- metric id
-	- index_in_metric
-	- option_string
+#### user_accounts
+Column | Type | Collation | Nullable | Default
+:---:  | :--: | :--:      | :---:    | :---:
+ id            | integer               |           | not null | nextval('user_accounts_id_seq'::regclass) 
+ username      | character varying(30) |           | not null | 
+ password_salt | character varying(40) |           | not null | 
+ password_hash | character(60)         |           | not null | 
+ name          | character varying(50) |           | not null | 
+#### projects
+Column | Type | Collation | Nullable | Default                
+:---: | :---: | :---: | :---: | :---:
+ id            | integer               |           | not null | nextval('projects_id_seq'::regclass)
+ name          | character varying(30) |           | not null | 
+ owner_user_id | integer               |           | not null | 
+
+#### tickets
+Column | Type | Collation | Nullable | Default               
+:-: | :-: | :-: | :-: | :-: 
+ id               | integer               |           | not null | nextval('tickets_id_seq'::regclass)
+ project_id       | integer               |           | not null | 
+ created_user_id  | integer               |           | not null | 
+ index_in_project | integer               |           | not null | 
+ title            | character varying(50) |           | not null |
+
+#### metrics 
+Column | Type | Collation | Nullable | Default               
+:-: | :-: | :-: | :-: | :-: 
+ id         | integer               |           | not null | nextval('metric_id_seq'::regclass)
+ project_id | integer               |           | not null | 
+ title      | character varying(20) |           | not null | 
+
+#### metric_options
+Column | Type | Collation | Nullable | Default                  
+:-: | :-: | :-: | :-: | :-: | 
+ id              | integer               |           | not null | nextval('metric_option_id_seq'::regclass)
+ metric_id       | integer               |           | not null | 
+ index_in_metric | integer               |           | not null | 
+ option_string   | character varying(20) |           | not null | 
+
+#### user_data
+TODO
 
 ### Relational Tables
-- user_project
-	- user_id
-	- project_id
-- ticket_asignees
-	- ticket_id
-	- assignee_user_id
+#### user_projects
+Column | Type | Collation | Nullable | Default 
+:-: | :-: | :-: | :-: | :-:
+user_id    | integer |           | not null | 
+project_id | integer |           | not null | 
+
+#### ticket_asignees
+Column | Type | Collation | Nullable | Default 
+:-: | :-: | :-: | :-: | :-:
+ ticket_id        | integer |           | not null | 
+ assignee_user_id | integer |           | not null | 

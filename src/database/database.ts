@@ -76,25 +76,20 @@ export const addProjectToUser = async (project: OmitID<Project>): Promise<{ proj
 
 export const addTicketToProject = async (ticket: Omit<Ticket, 'id' | 'index_in_project'>): Promise<Ticket> => {
 	return makeMultiQuery(async (client) => {
-		const getHighestIndexInProjectQuery: QueryConfig = {
-			text: 'SELECT highest_index FROM projects WHERE id=$1',
+		const getTicketIndicesQuery: QueryConfig = {
+			text: `SELECT index_in_project FROM ${Table[Table.tickets]} WHERE project_id=$1`,
 			values: [ticket.project_id],
 		};
-		const highestIndexResults = await client.query<Pick<Project, 'highest_index'>>(getHighestIndexInProjectQuery);
-		const highestIndex = checkForOne(highestIndexResults.rows, 'highest index in project').highest_index;
+		const ticketIndexResults = await client.query<Pick<Ticket, 'index_in_project'>>(getTicketIndicesQuery);
+		const ticketIndices = ticketIndexResults.rows.map(row => row.index_in_project);
+		const highestTicketIndex: null | number = ticketIndices.length === 0 ? null : Math.max(...ticketIndices);
 
 		const addTicketQuery: QueryConfig = {
 			text: `INSERT INTO ${Table[Table.tickets]} (project_id, created_user_id, index_in_project, title) VALUES ($1, $2, $3, $4) RETURNING *`,
-			values: [ticket.project_id, ticket.created_user_id, highestIndex + 1, ticket.title],
+			values: [ticket.project_id, ticket.created_user_id, highestTicketIndex ? highestTicketIndex + 1 : 1, ticket.title],
 		};
 		const ticketResults = await client.query<Ticket>(addTicketQuery);
 		const addedTicket = checkForOne(ticketResults.rows, 'new ticket');
-
-		const incrementHighestIndexInProjectQuery: QueryConfig = {
-			text: 'UPDATE projects SET highest_index = highest_index + 1 WHERE id=$1',
-			values: [ticket.project_id],
-		};
-		await client.query(incrementHighestIndexInProjectQuery);
 		return addedTicket;
 	});
 };

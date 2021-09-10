@@ -23,7 +23,6 @@ export interface Project {
 	id: number;
 	name: string;
 	owner_user_id: number;
-	highest_index: number;
 }
 
 export interface Ticket {

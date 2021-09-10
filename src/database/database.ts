@@ -1,18 +1,18 @@
-import { Pool, QueryConfig, PoolClient } from 'pg';
+import { Pool, PoolClient } from 'pg';
 import { PROD } from '../constants';
 import { OurQueryResultRow, UserProject, OmitID, UserAccount, Table, Project, Ticket, Metric, MetricOption, TicketAssignee } from './tables';
 
-const pool = new Pool({
+export const pool = new Pool({
 	connectionString: process.env.DATABASE_URL,
 	ssl: PROD ? { rejectUnauthorized: false } : false,
 });
 
-const checkForOne = <T extends OurQueryResultRow>(rows: T[], title :string): T => {
+export const checkForOne = <T extends OurQueryResultRow>(rows: T[], title :string): T => {
 	if (rows.length !== 1) throw new Error(`There should only be ${title}`);
 	return rows[0];
 };
 
-const rowWithIDExists = async (table: Table, id: number): Promise<boolean> => {
+export const rowWithIDExists = async (table: Table, id: number): Promise<boolean> => {
 	const results = await pool.query(`SELECT * FROM ${Table[table]} WHERE id=$1`, [id]);
 	return results.rows.length === 1;
 };
@@ -35,46 +35,6 @@ const makeMultiQuery = async <T>(queries: (client: PoolClient) => Promise<T>): P
 export const getAllUserProjects = async (): Promise<UserProject[]> => {
 	const results = await pool.query<UserProject>(`SELECT * FROM ${Table[Table.user_projects]}`);
 	return results.rows;
-};
-
-export const addUser = async (user: OmitID<UserAccount>): Promise<UserAccount> => {
-	const results = await pool.query<UserAccount>(
-		`INSERT INTO ${Table[Table.user_accounts]} (username, password_salt, password_hash, name) VALUES ($1, $2, $3, $4) RETURNING *`,
-		[user.username, user.password_salt, user.password_hash, user.name],
-	);
-	const addedUserAccount = checkForOne(results.rows, 'new user account');
-	return addedUserAccount;
-};
-
-export const deleteUser = async (userID: number): Promise<void> => {
-	if (!await rowWithIDExists(Table.user_accounts, userID))
-		throw new Error('Cannot delete a user that does not exist.');
-	await pool.query(`DELETE FROM ${Table[Table.user_accounts]} WHERE id=$1`, [userID]);
-};
-
-export const updateUser = async (userID: number, data: Pick<UserAccount, 'username' | 'name'>): Promise<void> => {
-	if (!await rowWithIDExists(Table.user_accounts, userID)) throw new Error('Cannot update a user that does not exist');
-	await pool.query(`UPDATE ${Table[Table.user_accounts]} SET username=$1, name=$2`, [data.username, data.name]);
-};
-
-export const getUser = async (id: number): Promise<UserAccount> => {
-	const results = await pool.query<UserAccount>(`SELECT * FROM ${Table[Table.user_accounts]} WHERE id=$1`, [id]);
-	if (results.rows.length === 0) throw new Error(`Could not find user with id ${id}`);
-	return results.rows[0];
-};
-
-export const getUsers = async (...IDs: number[]): Promise<UserAccount[]> => {
-	if (IDs.length === 0) {
-		const results = await pool.query<UserAccount>(`SELECT * FROM ${Table[Table.user_accounts]}`);
-		return results.rows;
-	} else {
-		const users: UserAccount[] = [];
-		IDs.forEach(async id => {
-			const user = await getUser(id);
-			users.push(user);
-		});
-		return users;
-	}
 };
 
 const addUserProjectPair = async (user_id: number, project_id: number, existingClient?: PoolClient): Promise<UserProject> => {

@@ -101,6 +101,10 @@ export const addTicketToProject = async (ticket: Omit<Ticket, 'id' | 'index_in_p
 };
 
 export const addMetricToProject = async (metric: OmitID<Metric>): Promise<Metric> => {
+	const metricNameResults = await pool.query<Pick<Metric, 'title'>>(`SELECT title FROM ${Table[Table.metrics]} WHERE project_id=$1`, [metric.project_id]);
+	const metricNames = metricNameResults.rows.map(row => row.title);
+	if (metricNames.indexOf(metric.title) !== -1) throw new Error('Cannot add a metric of the same name to the same project');
+
 	const query: QueryConfig = {
 		text: `INSERT INTO ${Table[Table.metrics]} (project_id, title) VALUES ($1, $2) RETURNING *`,
 		values: [metric.project_id, metric.title],

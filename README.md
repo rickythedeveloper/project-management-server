@@ -66,14 +66,14 @@ Column | Type | Collation | Nullable | Default
 :---: | :---: | :---: | :---: | :---:
  id            | integer               |           | not null | nextval('projects_id_seq'::regclass)
  name          | character varying(30) |           | not null | 
- owner_user_id | integer               |           | not null | 
+ owner_user_id | integer               |           |          | 
 
 #### tickets
 Column | Type | Collation | Nullable | Default               
 :-: | :-: | :-: | :-: | :-: 
  id               | integer               |           | not null | nextval('tickets_id_seq'::regclass)
  project_id       | integer               |           | not null | 
- created_user_id  | integer               |           | not null | 
+ created_user_id  | integer               |           |          | 
  index_in_project | integer               |           | not null | 
  title            | character varying(50) |           | not null |
 

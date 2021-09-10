@@ -36,17 +36,17 @@ You might have to run `$ heroku pg:reset` before pushing.
 `$ git push heroku main` (if you want to push local main).\
 `$ git push heroku whatever_local_branch:main` (if you want to push a local branch other than main)
 - add a user
-	`$ curl -d "username=rickythedeveloper&password_hash=123456789012345678901234567890123456789012345678901234567890&password_salt=salthere&name=rickykawagishi" -X POST http://localhost:${PORT}/addUser`
+	`$ curl -d "username=rickythedeveloper&password_hash=123456789012345678901234567890123456789012345678901234567890&password_salt=salthere&name=rickykawagishi" -X POST http://localhost:8000/addUser`
 - add a project to a user
-	`$ curl -d "name=some project&owner_user_id=1" -X POST http://localhost:${PORT}/projects`
+	`$ curl -d "name=some project&owner_user_id=1" -X POST http://localhost:8000/projects`
 - add a ticket to a project
-	`$ curl -d "project_id=3&created_user_id=1&title=some ticket man" -X POST http://localhost:${PORT}/tickets`
+	`$ curl -d "project_id=3&created_user_id=1&title=some ticket man" -X POST http://localhost:8000/tickets`
 - add a metric to a project
-	`$ curl -d "project_id=3&title=some metric" -X POST http://localhost:${PORT}/metrics`
+	`$ curl -d "project_id=3&title=some metric" -X POST http://localhost:8000/metrics`
 - add a metric option to a metric
-	`$ curl -d "metric_id=1&option_string=some metric option" -X POST http://localhost:${PORT}/metric-options`
+	`$ curl -d "metric_id=1&option_string=some metric option" -X POST http://localhost:8000/metric-options`
 - add a ticket assignee pair
-	`$ curl -d "ticket_id=1&assignee_user_id=1" -X POST http://localhost:${PORT}/ticket-assignees`
+	`$ curl -d "ticket_id=1&assignee_user_id=1" -X POST http://localhost:8000/ticket-assignees`
 
 ---
 

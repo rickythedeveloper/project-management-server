@@ -31,6 +31,12 @@ Run the following.
 You can try the following to simulate requests.
 - add a user
 	`$ curl -d "username=rickythedeveloper&password_hash=123456789012345678901234567890123456789012345678901234567890&password_salt=salthere&name=rickykawagishi" -X POST http://localhost:8000/users`
+- delete a user
+	`$ curl -X "DELETE" http://localhost:8000/users/1`
+- edit a user's username or name
+	`$ curl -X PUT -d "username=newusername&name=newname" http://localhost:8000/users/1`
+- get a user / users
+	Go to http://localhost.8000/users/1 or http://localhost.8000/users
 - add a project to a user
 	`$ curl -d "name=some project&owner_user_id=1" -X POST http://localhost:8000/projects`
 - add a ticket to a project

@@ -81,6 +81,9 @@ export const addProjectToUser = async (project: OmitID<Project>): Promise<{ proj
 };
 
 export const addTicketToProject = async (ticket: Omit<Ticket, 'id' | 'index_in_project'>): Promise<Ticket> => {
+	if (!await rowWithIDExists(Table.projects, ticket.project_id)) throw new Error('Cannot add a ticket to a non-existent project');
+	if (!await rowWithIDExists(Table.user_accounts, ticket.created_user_id)) throw new Error('Cannot add a ticket to a non-existent user');
+
 	return makeMultiQuery(async (client) => {
 		const getTicketIndicesQuery: QueryConfig = {
 			text: `SELECT index_in_project FROM ${Table[Table.tickets]} WHERE project_id=$1`,

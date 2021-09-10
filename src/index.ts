@@ -1,11 +1,11 @@
-import express from 'express';
-import { PORT } from './constants';
-import * as usersAPI from './api/users';
-import * as projectsAPI from './api/projects';
-import * as ticketsAPI from './api/tickets';
-import * as metricsAPI from './api/metrics';
 import * as metricOptionsAPI from './api/metricOptions';
+import * as metricsAPI from './api/metrics';
+import * as projectsAPI from './api/projects';
 import * as ticketAssigneesAPI from './api/ticketAssignees';
+import * as ticketsAPI from './api/tickets';
+import * as usersAPI from './api/users';
+import { PORT } from './constants';
+import express from 'express';
 
 const app = express();
 

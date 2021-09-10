@@ -1,6 +1,6 @@
+import { Pool, PoolClient } from 'pg';
 import { Table, TicketAssignee } from '../structure';
-import { rowWithIDExists, checkForOne, pool } from '.';
-import { PoolClient, Pool } from 'pg';
+import { checkForOne, pool, rowWithIDExists } from '.';
 
 const addTicketAssigneePair = async (ticketAssignee: TicketAssignee, existingClient?: PoolClient): Promise<TicketAssignee> => {
 	const client: PoolClient | Pool = existingClient ? existingClient : pool;

@@ -1,5 +1,5 @@
 import { Table, Ticket } from '../structure';
-import { rowWithIDExists, makeMultiQuery, checkForOne } from '.';
+import { checkForOne, makeMultiQuery, rowWithIDExists } from '.';
 
 export const addTicketToProject = async (ticket: Omit<Ticket, 'id' | 'index_in_project'>): Promise<Ticket> => {
 	if (!await rowWithIDExists(Table.projects, ticket.project_id)) throw new Error('Cannot add a ticket to a non-existent project');

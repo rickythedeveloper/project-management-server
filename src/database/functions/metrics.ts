@@ -1,5 +1,5 @@
-import { OmitID, Table, Metric } from '../structure';
-import { rowWithIDExists, pool, checkForOne } from '.';
+import { Metric, OmitID, Table } from '../structure';
+import { checkForOne, pool, rowWithIDExists } from '.';
 
 export const addMetricToProject = async (metric: OmitID<Metric>): Promise<Metric> => {
 	if (!await rowWithIDExists(Table.projects, metric.project_id)) throw new Error('Cannot add a metric to a non-existent project');

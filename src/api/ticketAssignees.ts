@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
-import { TicketAssignee } from '../database/structure';
 import { PostResponse } from '.';
+import { TicketAssignee } from '../database/structure';
 import { addAssigneeToTicket } from '../database/functions/ticketAssignees';
 
 export const post = async (req: Request<{}, PostResponse<TicketAssignee>, TicketAssignee>, res: Response<PostResponse<TicketAssignee>>) => {

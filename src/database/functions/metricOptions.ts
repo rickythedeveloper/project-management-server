@@ -1,5 +1,5 @@
-import { Table, MetricOption } from '../structure';
-import { rowWithIDExists, makeMultiQuery, checkForOne } from '.';
+import { MetricOption, Table } from '../structure';
+import { checkForOne, makeMultiQuery, rowWithIDExists } from '.';
 
 export const addMetricOptionToMetric = async (metricOption: Omit<MetricOption, 'id' | 'index_in_metric'>): Promise<MetricOption> => {
 	if (!await rowWithIDExists(Table.metrics, metricOption.metric_id))

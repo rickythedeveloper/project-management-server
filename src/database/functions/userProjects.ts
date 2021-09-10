@@ -1,6 +1,6 @@
-import { UserProject, Table } from '../structure';
-import { pool, checkForOne } from '.';
-import { PoolClient, Pool } from 'pg';
+import { Pool, PoolClient } from 'pg';
+import { Table, UserProject } from '../structure';
+import { checkForOne, pool } from '.';
 
 export const getAllUserProjects = async (): Promise<UserProject[]> => {
 	const results = await pool.query<UserProject>(`SELECT * FROM ${Table[Table.user_projects]}`);

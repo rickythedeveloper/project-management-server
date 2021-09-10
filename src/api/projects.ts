@@ -1,5 +1,5 @@
+import { OmitID, Project, UserProject } from '../database/structure';
 import { Request, Response } from 'express';
-import { Project, UserProject, OmitID } from '../database/structure';
 import { PostResponse } from '.';
 import { addProjectToUser } from '../database/functions/projects';
 

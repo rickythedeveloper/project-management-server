@@ -1,6 +1,6 @@
+import { OurQueryResultRow, Table } from '../structure';
 import { Pool, PoolClient } from 'pg';
 import { PROD } from '../../constants';
-import { OurQueryResultRow, Table } from '../structure';
 
 export const pool = new Pool({
 	connectionString: process.env.DATABASE_URL,

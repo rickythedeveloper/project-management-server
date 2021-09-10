@@ -1,5 +1,5 @@
-import { pool, checkForOne, rowWithIDExists } from '.';
-import { OmitID, UserAccount, Table } from '../structure';
+import { OmitID, Table, UserAccount } from '../structure';
+import { checkForOne, pool, rowWithIDExists } from '.';
 
 export const addUser = async (user: OmitID<UserAccount>): Promise<UserAccount> => {
 	const results = await pool.query<UserAccount>(

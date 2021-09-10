@@ -1,5 +1,5 @@
-import { OmitID, Project, UserProject, Table } from '../structure';
-import { rowWithIDExists, pool, makeMultiQuery, checkForOne } from '.';
+import { OmitID, Project, Table, UserProject } from '../structure';
+import { checkForOne, makeMultiQuery, pool, rowWithIDExists } from '.';
 import { addUserProjectPair } from './userProjects';
 
 export const addProjectToUser = async (project: OmitID<Project>): Promise<{ project: Project; userProject: UserProject }> => {

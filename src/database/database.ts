@@ -33,7 +33,7 @@ const makeMultiQuery = async <T>(queries: (client: PoolClient) => Promise<T>): P
 };
 
 export const getAllUserProjects = async (): Promise<UserProject[]> => {
-	const results = await pool.query<UserProject>('SELECT * FROM user_projects');
+	const results = await pool.query<UserProject>(`SELECT * FROM ${Table[Table.user_projects]}`);
 	return results.rows;
 };
 
@@ -63,7 +63,7 @@ const addUserProjectPair = async (user_id: number, project_id: number, existingC
 export const addProjectToUser = async (project: OmitID<Project>): Promise<{ project: Project; userProject: UserProject }> => {
 	if (!await rowWithIDExists(Table.user_accounts, project.owner_user_id)) throw new Error('Cannot add a project to a non-existent user.');
 
-	const projectNameResults = await pool.query<Pick<Project, 'name'>>('SELECT name FROM projects WHERE owner_user_id=$1', [project.owner_user_id]);
+	const projectNameResults = await pool.query<Pick<Project, 'name'>>(`SELECT name FROM ${Table[Table.projects]} WHERE owner_user_id=$1`, [project.owner_user_id]);
 	const projectNames = projectNameResults.rows.map(row => row.name);
 	if (projectNames.indexOf(project.name) !== -1) throw new Error('Cannot add a project of the same name for the same user');
 

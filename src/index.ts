@@ -1,7 +1,11 @@
 import express, { Request, Response } from 'express';
-import { getAllUserProjects, addProjectToUser, addTicketToProject, addMetricToProject, addMetricOptionToMetric, addAssigneeToTicket } from './database/database';
-import { OmitID, Project, UserAccount, Ticket, Metric, MetricOption, TicketAssignee, UserProject } from './database/tables';
-import { addUser, deleteUser, updateUser, getUser, getUsers } from './database/users';
+import { addAssigneeToTicket } from './database/functions/ticketAssignees';
+import { addMetricOptionToMetric } from './database/functions/metricOptions';
+import { addMetricToProject } from './database/functions/metrics';
+import { addTicketToProject } from './database/functions/tickets';
+import { OmitID, Project, UserAccount, Ticket, Metric, MetricOption, TicketAssignee, UserProject } from './database/structure';
+import { getAllUserProjects } from './database/functions/userProjects';
+import { addProjectToUser } from './database/functions/projects';
 import { PORT } from './constants';
 import * as usersAPI from './api/users';
 

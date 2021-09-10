@@ -36,7 +36,7 @@ You can try the following to simulate requests.
 - edit a user's username or name
 	`$ curl -X PUT -d "username=newusername&name=newname" http://localhost:8000/users/1`
 - get a user / users
-	Go to http://localhost.8000/users/1 or http://localhost.8000/users
+	Go to http://localhost:8000/users/1 or http://localhost:8000/users
 - add a project to a user
 	`$ curl -d "name=some project&owner_user_id=1" -X POST http://localhost:8000/projects`
 - add a ticket to a project

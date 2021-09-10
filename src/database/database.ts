@@ -1,6 +1,6 @@
 import { Pool, QueryConfig } from 'pg';
 import { PROD } from '../constants';
-import { OurQueryResultRow, UserProject, OmitID, UserAccount, Table, Project, Ticket, Metric, MetricOption } from './tables';
+import { OurQueryResultRow, UserProject, OmitID, UserAccount, Table, Project, Ticket, Metric, MetricOption, TicketAssignee } from './tables';
 
 const pool = new Pool({
 	connectionString: process.env.DATABASE_URL,
@@ -19,6 +19,18 @@ async function makeDatabaseQuery<R extends OurQueryResultRow, I extends any[] = 
 const checkForOne = <T extends OurQueryResultRow>(rows: T[], title :string): T => {
 	if (rows.length !== 1) throw new Error(`There should only be ${title}`);
 	return rows[0];
+};
+
+const rowWithIDExists = async (table: Table, id: number): Promise<boolean> => {
+	const query: QueryConfig = {
+		text: `
+			SELECT * FROM ${Table[table]}
+			WHERE id=$1
+		`,
+		values: [id],
+	};
+	const rows = await makeDatabaseQuery<Metric>(query);
+	return rows.length === 1;
 };
 
 export const getAllUserProjects = async (): Promise<UserProject[]> => makeDatabaseQuery('SELECT * FROM user_projects');
@@ -138,22 +150,10 @@ const getHighestOptionIndexInMetric = async (metricID: number): Promise<number |
 	return Math.max(...indices);
 };
 
-const getNumberOfMetricsWithID = async (metricID: number): Promise<number> => {
-	const query: QueryConfig = {
-		text: `
-			SELECT * FROM ${Table[Table.metrics]}
-			WHERE id=$1
-		`,
-		values: [metricID],
-	};
-	const rows = await makeDatabaseQuery<Metric>(query);
-	return rows.length;
-};
-
 export const addMetricOptionToMetric = async (metricOption: Omit<MetricOption, 'id' | 'index_in_metric'>): Promise<Metric> => {
-	const nMetricsWithID = await getNumberOfMetricsWithID(metricOption.metric_id);
-	if (nMetricsWithID === 0) throw new Error('Could not add an option to a metric that does not exist. Check metric_option.metric_id.');
-	if (nMetricsWithID > 1) throw new Error('Could not add a option to a metric because there are more than one metric with that same ID.');
+	if (!await rowWithIDExists(Table.metrics, metricOption.metric_id))
+		throw new Error('Could not add an option to a metric that does not exist. Check metric_option.metric_id.');
+
 	const highestIndex = await getHighestOptionIndexInMetric(metricOption.metric_id);
 	const query: QueryConfig = {
 		text: `
@@ -165,4 +165,23 @@ export const addMetricOptionToMetric = async (metricOption: Omit<MetricOption, '
 	const rows = await makeDatabaseQuery<Metric>(query);
 	const newMetric = checkForOne(rows, 'new metric option');
 	return newMetric;
+};
+
+export const addAssigneeToTicket = async (ticketAssignee: TicketAssignee) => {
+	if (
+		!await rowWithIDExists(Table.tickets, ticketAssignee.ticket_id) ||
+		!await rowWithIDExists(Table.user_accounts, ticketAssignee.assignee_user_id)
+	)
+		throw new Error('Could not add a ticket assignee pair because either a ticket or a user account with the given IDs did not exist.');
+
+	const query: QueryConfig = {
+		text: `
+			INSERT INTO ${Table[Table.ticket_assignees]} (ticket_id, assignee_user_id)
+			VALUES ($1, $2) RETURNING *;
+		`,
+		values: [ticketAssignee.ticket_id, ticketAssignee.assignee_user_id],
+	};
+	const rows = await makeDatabaseQuery(query);
+	const newPair = checkForOne(rows, 'new ticket assignee pair');
+	return newPair;
 };

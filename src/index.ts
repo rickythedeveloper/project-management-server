@@ -1,6 +1,6 @@
 import express, { Response } from 'express';
-import { getAllUserProjects, addUser, addProjectToUser, addTicketToProject, addMetricToProject, addMetricOptionToMetric } from './database/database';
-import { OmitID, Project, UserAccount, Ticket, Metric, MetricOption } from './database/tables';
+import { getAllUserProjects, addUser, addProjectToUser, addTicketToProject, addMetricToProject, addMetricOptionToMetric, addAssigneeToTicket } from './database/database';
+import { OmitID, Project, UserAccount, Ticket, Metric, MetricOption, TicketAssignee } from './database/tables';
 import { PORT } from './constants';
 
 const app = express();
@@ -82,6 +82,16 @@ app.post('/metric-options', async (req, res: Response<APIResponse>) => {
 	}
 });
 
+app.post('/ticket-assignees', async (req, res: Response<APIResponse>) => {
+	try {
+		const pair: TicketAssignee = req.body;
+		const addedPair = await addAssigneeToTicket(pair);
+		res.json({ isSuccessful: true, result: addedPair });
+	} catch (error) {
+		res.json({ isSuccessful: false, error: String(error) });
+	}
+});
+
 app.listen(PORT, () => {
 	console.log(`
 		Server started at http://localhost:${PORT}
@@ -100,6 +110,9 @@ app.listen(PORT, () => {
 
 		To add a metric option to a metric, try the following
 		curl -d "metric_id=1&option_string=some metric option" -X POST http://localhost:${PORT}/metric-options
+
+		To add a ticket assignee pair, try the following
+		curl -d "ticket_id=1&assignee_user_id=1" -X POST http://localhost:${PORT}/ticket-assignees
 	`);
 });
 

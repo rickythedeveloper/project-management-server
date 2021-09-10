@@ -54,7 +54,9 @@ export const addUser = async (user: OmitID<UserAccount>): Promise<UserAccount> =
 	return addedUserAccount;
 };
 
-const addUserProjectPair = async (user_id: number, project_id: number, client: PoolClient): Promise<UserProject> => {
+const addUserProjectPair = async (user_id: number, project_id: number, existingClient?: PoolClient): Promise<UserProject> => {
+	const client: PoolClient | Pool = existingClient ? existingClient : pool;
+
 	const combinationCheckResults = await client.query(`SELECT FROM ${Table[Table.user_projects]} WHERE user_id=$1 AND project_id=$2`, [user_id, project_id]);
 	if (combinationCheckResults.rows.length !== 0) throw new Error('Cannot add a user-project pair that already exists');
 
@@ -149,6 +151,23 @@ export const addMetricOptionToMetric = async (metricOption: Omit<MetricOption, '
 	});
 };
 
+const addTicketAssigneePair = async (ticketAssignee: TicketAssignee, existingClient?: PoolClient): Promise<TicketAssignee> => {
+	const client: PoolClient | Pool = existingClient ? existingClient : pool;
+
+	const combinationCheckResults = await client.query(
+		`SELECT FROM ${Table[Table.ticket_assignees]} WHERE ticket_id=$1 AND assignee_user_id=$2`,
+		[ticketAssignee.ticket_id, ticketAssignee.assignee_user_id],
+	);
+	if (combinationCheckResults.rows.length !== 0) throw new Error('Cannot add a ticket-assignee pair that already exists');
+
+	const addPairResult = await client.query<TicketAssignee>(
+		`INSERT INTO ${Table[Table.ticket_assignees]} (ticket_id, assignee_user_id) VALUES ($1, $2) RETURNING *;`,
+		[ticketAssignee.ticket_id, ticketAssignee.assignee_user_id],
+	);
+	const newTicketAssignee = checkForOne(addPairResult.rows, 'new ticket-assignee pair');
+	return newTicketAssignee;
+};
+
 export const addAssigneeToTicket = async (ticketAssignee: TicketAssignee) => {
 	if (
 		!await rowWithIDExists(Table.tickets, ticketAssignee.ticket_id) ||
@@ -156,11 +175,6 @@ export const addAssigneeToTicket = async (ticketAssignee: TicketAssignee) => {
 	)
 		throw new Error('Could not add a ticket assignee pair because either a ticket or a user account with the given IDs did not exist.');
 
-	const query: QueryConfig = {
-		text: `INSERT INTO ${Table[Table.ticket_assignees]} (ticket_id, assignee_user_id) VALUES ($1, $2) RETURNING *;`,
-		values: [ticketAssignee.ticket_id, ticketAssignee.assignee_user_id],
-	};
-	const results = await pool.query<TicketAssignee>(query);
-	const newPair = checkForOne(results.rows, 'new ticket assignee pair');
+	const newPair = await addTicketAssigneePair(ticketAssignee);
 	return newPair;
 };

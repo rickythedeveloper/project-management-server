@@ -1,6 +1,6 @@
 import { Pool, QueryConfig } from 'pg';
 import { PROD } from '../constants';
-import { OurQueryResultRow, UserProject, OmitID, UserAccount, Table, Project, Ticket, Metric } from './tables';
+import { OurQueryResultRow, UserProject, OmitID, UserAccount, Table, Project, Ticket, Metric, MetricOption } from './tables';
 
 const pool = new Pool({
 	connectionString: process.env.DATABASE_URL,
@@ -121,5 +121,48 @@ export const addMetricToProject = async (metric: OmitID<Metric>): Promise<Metric
 	};
 	const rows = await makeDatabaseQuery<Metric>(query);
 	const newMetric = checkForOne(rows, 'new metric');
+	return newMetric;
+};
+
+const getHighestOptionIndexInMetric = async (metricID: number): Promise<number | null>=> {
+	const query: QueryConfig = {
+		text: `
+			SELECT index_in_metric FROM ${Table[Table.metric_options]}
+			WHERE metric_id=$1
+		`,
+		values: [metricID],
+	};
+	const rows = await makeDatabaseQuery<Pick<MetricOption, 'index_in_metric'>>(query);
+	const indices = rows.map(row => row.index_in_metric);
+	if (indices.length === 0) return null;
+	return Math.max(...indices);
+};
+
+const getNumberOfMetricsWithID = async (metricID: number): Promise<number> => {
+	const query: QueryConfig = {
+		text: `
+			SELECT * FROM ${Table[Table.metrics]}
+			WHERE id=$1
+		`,
+		values: [metricID],
+	};
+	const rows = await makeDatabaseQuery<Metric>(query);
+	return rows.length;
+};
+
+export const addMetricOptionToMetric = async (metricOption: Omit<MetricOption, 'id' | 'index_in_metric'>): Promise<Metric> => {
+	const nMetricsWithID = await getNumberOfMetricsWithID(metricOption.metric_id);
+	if (nMetricsWithID === 0) throw new Error('Could not add an option to a metric that does not exist. Check metric_option.metric_id.');
+	if (nMetricsWithID > 1) throw new Error('Could not add a option to a metric because there are more than one metric with that same ID.');
+	const highestIndex = await getHighestOptionIndexInMetric(metricOption.metric_id);
+	const query: QueryConfig = {
+		text: `
+			INSERT INTO ${Table[Table.metric_options]} (metric_id, index_in_metric, option_string)
+			VALUES ($1, $2, $3) RETURNING *
+		`,
+		values: [metricOption.metric_id, highestIndex ? highestIndex + 1 : 1, metricOption.option_string],
+	};
+	const rows = await makeDatabaseQuery<Metric>(query);
+	const newMetric = checkForOne(rows, 'new metric option');
 	return newMetric;
 };

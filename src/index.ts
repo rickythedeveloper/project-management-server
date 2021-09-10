@@ -1,6 +1,6 @@
 import express, { Response } from 'express';
-import { getAllUserProjects, addUser, addProjectToUser, addTicketToProject, addMetricToProject } from './database/database';
-import { OmitID, Project, UserAccount, Ticket, Metric } from './database/tables';
+import { getAllUserProjects, addUser, addProjectToUser, addTicketToProject, addMetricToProject, addMetricOptionToMetric } from './database/database';
+import { OmitID, Project, UserAccount, Ticket, Metric, MetricOption } from './database/tables';
 import { PORT } from './constants';
 
 const app = express();
@@ -72,6 +72,16 @@ app.post('/metrics', async (req, res: Response<APIResponse>) => {
 	}
 });
 
+app.post('/metric-options', async (req, res: Response<APIResponse>) => {
+	try {
+		const metricOption: Omit<MetricOption, 'id' | 'index_in_metric'> = req.body;
+		const addedMetricOption = await addMetricOptionToMetric(metricOption);
+		res.json({ isSuccessful: true, result: addedMetricOption });
+	} catch (error) {
+		res.json({ isSuccessful: false, error: String(error) });
+	}
+});
+
 app.listen(PORT, () => {
 	console.log(`
 		Server started at http://localhost:${PORT}
@@ -87,6 +97,9 @@ app.listen(PORT, () => {
 
 		To add a metric to a project, try the following
 		curl -d "project_id=3&title=some metric" -X POST http://localhost:${PORT}/metrics
+
+		To add a metric option to a metric, try the following
+		curl -d "metric_id=1&option_string=some metric option" -X POST http://localhost:${PORT}/metric-options
 	`);
 });
 

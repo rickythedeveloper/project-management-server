@@ -54,6 +54,15 @@ export const addUser = async (user: OmitID<UserAccount>): Promise<UserAccount> =
 	return addedUserAccount;
 };
 
+const addUserProjectPair = async (user_id: number, project_id: number, client: PoolClient): Promise<UserProject> => {
+	const combinationCheckResults = await client.query(`SELECT FROM ${Table[Table.user_projects]} WHERE user_id=$1 AND project_id=$2`, [user_id, project_id]);
+	if (combinationCheckResults.rows.length !== 0) throw new Error('Cannot add a user-project pair that already exists');
+
+	const addPairResult = await client.query<UserProject>(`INSERT INTO ${Table[Table.user_projects]} (user_id, project_id) VALUES ($1, $2) RETURNING *`, [user_id, project_id]);
+	const newUserProject = checkForOne(addPairResult.rows, 'new user-project pair');
+	return newUserProject;
+};
+
 export const addProjectToUser = async (project: OmitID<Project>): Promise<{ project: Project; userProject: UserProject }> => {
 	if (!await rowWithIDExists(Table.user_accounts, project.owner_user_id)) throw new Error('Cannot add a project to a non-existent user.');
 
@@ -69,13 +78,7 @@ export const addProjectToUser = async (project: OmitID<Project>): Promise<{ proj
 		const projectResults = await client.query<Project>(addProjectQuery);
 		const newProject = checkForOne(projectResults.rows, 'new proejct');
 
-		const addUserProjectQuery: QueryConfig = {
-			text: ` INSERT INTO ${Table[Table.user_projects]} (user_id, project_id) VALUES ($1, $2) RETURNING *`,
-			values: [newProject.owner_user_id, newProject.id],
-		};
-		const userProjectResults = await client.query<UserProject>(addUserProjectQuery);
-		const newUserProject = checkForOne(userProjectResults.rows, 'new user-project pair');
-
+		const newUserProject = await addUserProjectPair(newProject.owner_user_id, newProject.id, client);
 		return { project: newProject, userProject: newUserProject };
 	});
 };

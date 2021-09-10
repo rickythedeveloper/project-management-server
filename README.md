@@ -1,6 +1,7 @@
 # project-management-server
 ## Overview
-Server side app.
+The server side app to go with the client app ([repo](https://github.com/rickythedeveloper/project-management-client/))
+The production API is found at https://rtd-project-management.herokuapp.com/ .
 
 ---
 
@@ -29,7 +30,7 @@ Run the following.
 ### Checking the API from terminal
 You can try the following to simulate requests.
 - add a user
-	`$ curl -d "username=rickythedeveloper&password_hash=123456789012345678901234567890123456789012345678901234567890&password_salt=salthere&name=rickykawagishi" -X POST http://localhost:8000/addUser`
+	`$ curl -d "username=rickythedeveloper&password_hash=123456789012345678901234567890123456789012345678901234567890&password_salt=salthere&name=rickykawagishi" -X POST http://localhost:8000/users`
 - add a project to a user
 	`$ curl -d "name=some project&owner_user_id=1" -X POST http://localhost:8000/projects`
 - add a ticket to a project

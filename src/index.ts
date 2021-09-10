@@ -32,7 +32,7 @@ app.get('/apitest', async (req, res) => {
 	}
 });
 
-app.post('/addUser', async (req, res: Response<APIResponse>) => {
+app.post('/users', async (req, res: Response<APIResponse>) => {
 	try {
 		const newUser: OmitID<UserAccount> = req.body;
 		const addedUser = await addUser(newUser);

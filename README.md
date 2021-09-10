@@ -20,8 +20,7 @@ Let's say you want to pull the production environment to your local machine as a
 
 ### Pushing the database to Heroku
 Run the following.
-`$ heroku pg:push projman DATABASE_URL --app rtd-project-management`\
-You might have to run `$ heroku pg:reset` before pushing.
+`$ heroku pg:reset --confirm rtd-project-management; heroku pg:push projman DATABASE_URL --app rtd-project-management`
 
 ### Pushing the code to Heroku
 `$ git push heroku main` (if you want to push local main).\

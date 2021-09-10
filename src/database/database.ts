@@ -54,7 +54,24 @@ export const addUser = async (user: OmitID<UserAccount>): Promise<UserAccount> =
 	return addedUserAccount;
 };
 
+const addUserProjectPair = async (user_id: number, project_id: number, existingClient?: PoolClient): Promise<UserProject> => {
+	const client: PoolClient | Pool = existingClient ? existingClient : pool;
+
+	const combinationCheckResults = await client.query(`SELECT FROM ${Table[Table.user_projects]} WHERE user_id=$1 AND project_id=$2`, [user_id, project_id]);
+	if (combinationCheckResults.rows.length !== 0) throw new Error('Cannot add a user-project pair that already exists');
+
+	const addPairResult = await client.query<UserProject>(`INSERT INTO ${Table[Table.user_projects]} (user_id, project_id) VALUES ($1, $2) RETURNING *`, [user_id, project_id]);
+	const newUserProject = checkForOne(addPairResult.rows, 'new user-project pair');
+	return newUserProject;
+};
+
 export const addProjectToUser = async (project: OmitID<Project>): Promise<{ project: Project; userProject: UserProject }> => {
+	if (!await rowWithIDExists(Table.user_accounts, project.owner_user_id)) throw new Error('Cannot add a project to a non-existent user.');
+
+	const projectNameResults = await pool.query<Pick<Project, 'name'>>('SELECT name FROM projects WHERE owner_user_id=$1', [project.owner_user_id]);
+	const projectNames = projectNameResults.rows.map(row => row.name);
+	if (projectNames.indexOf(project.name) !== -1) throw new Error('Cannot add a project of the same name for the same user');
+
 	return makeMultiQuery(async (client) => {
 		const addProjectQuery: QueryConfig = {
 			text: `INSERT INTO ${Table[Table.projects]} (name, owner_user_id)  VALUES ($1, $2) RETURNING *`,
@@ -63,18 +80,15 @@ export const addProjectToUser = async (project: OmitID<Project>): Promise<{ proj
 		const projectResults = await client.query<Project>(addProjectQuery);
 		const newProject = checkForOne(projectResults.rows, 'new proejct');
 
-		const addUserProjectQuery: QueryConfig = {
-			text: ` INSERT INTO ${Table[Table.user_projects]} (user_id, project_id) VALUES ($1, $2) RETURNING *`,
-			values: [newProject.owner_user_id, newProject.id],
-		};
-		const userProjectResults = await client.query<UserProject>(addUserProjectQuery);
-		const newUserProject = checkForOne(userProjectResults.rows, 'new user-project pair');
-
+		const newUserProject = await addUserProjectPair(newProject.owner_user_id, newProject.id, client);
 		return { project: newProject, userProject: newUserProject };
 	});
 };
 
 export const addTicketToProject = async (ticket: Omit<Ticket, 'id' | 'index_in_project'>): Promise<Ticket> => {
+	if (!await rowWithIDExists(Table.projects, ticket.project_id)) throw new Error('Cannot add a ticket to a non-existent project');
+	if (!await rowWithIDExists(Table.user_accounts, ticket.created_user_id)) throw new Error('Cannot add a ticket to a non-existent user');
+
 	return makeMultiQuery(async (client) => {
 		const getTicketIndicesQuery: QueryConfig = {
 			text: `SELECT index_in_project FROM ${Table[Table.tickets]} WHERE project_id=$1`,
@@ -95,6 +109,12 @@ export const addTicketToProject = async (ticket: Omit<Ticket, 'id' | 'index_in_p
 };
 
 export const addMetricToProject = async (metric: OmitID<Metric>): Promise<Metric> => {
+	if (!await rowWithIDExists(Table.projects, metric.project_id)) throw new Error('Cannot add a metric to a non-existent project');
+
+	const metricNameResults = await pool.query<Pick<Metric, 'title'>>(`SELECT title FROM ${Table[Table.metrics]} WHERE project_id=$1`, [metric.project_id]);
+	const metricNames = metricNameResults.rows.map(row => row.title);
+	if (metricNames.indexOf(metric.title) !== -1) throw new Error('Cannot add a metric of the same name to the same project');
+
 	const query: QueryConfig = {
 		text: `INSERT INTO ${Table[Table.metrics]} (project_id, title) VALUES ($1, $2) RETURNING *`,
 		values: [metric.project_id, metric.title],
@@ -131,6 +151,23 @@ export const addMetricOptionToMetric = async (metricOption: Omit<MetricOption, '
 	});
 };
 
+const addTicketAssigneePair = async (ticketAssignee: TicketAssignee, existingClient?: PoolClient): Promise<TicketAssignee> => {
+	const client: PoolClient | Pool = existingClient ? existingClient : pool;
+
+	const combinationCheckResults = await client.query(
+		`SELECT FROM ${Table[Table.ticket_assignees]} WHERE ticket_id=$1 AND assignee_user_id=$2`,
+		[ticketAssignee.ticket_id, ticketAssignee.assignee_user_id],
+	);
+	if (combinationCheckResults.rows.length !== 0) throw new Error('Cannot add a ticket-assignee pair that already exists');
+
+	const addPairResult = await client.query<TicketAssignee>(
+		`INSERT INTO ${Table[Table.ticket_assignees]} (ticket_id, assignee_user_id) VALUES ($1, $2) RETURNING *;`,
+		[ticketAssignee.ticket_id, ticketAssignee.assignee_user_id],
+	);
+	const newTicketAssignee = checkForOne(addPairResult.rows, 'new ticket-assignee pair');
+	return newTicketAssignee;
+};
+
 export const addAssigneeToTicket = async (ticketAssignee: TicketAssignee) => {
 	if (
 		!await rowWithIDExists(Table.tickets, ticketAssignee.ticket_id) ||
@@ -138,11 +175,6 @@ export const addAssigneeToTicket = async (ticketAssignee: TicketAssignee) => {
 	)
 		throw new Error('Could not add a ticket assignee pair because either a ticket or a user account with the given IDs did not exist.');
 
-	const query: QueryConfig = {
-		text: `INSERT INTO ${Table[Table.ticket_assignees]} (ticket_id, assignee_user_id) VALUES ($1, $2) RETURNING *;`,
-		values: [ticketAssignee.ticket_id, ticketAssignee.assignee_user_id],
-	};
-	const results = await pool.query<TicketAssignee>(query);
-	const newPair = checkForOne(results.rows, 'new ticket assignee pair');
+	const newPair = await addTicketAssigneePair(ticketAssignee);
 	return newPair;
 };

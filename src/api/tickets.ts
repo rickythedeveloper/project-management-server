@@ -1,6 +1,5 @@
-import { DataTable, OmitID, Ticket } from '../database/structure';
-import { deleteRow, editRow, getRows } from '../database/functions';
-import { DeleteResponse, GetResponse, PostResponse, PutResponse } from '.';
+import { Ticket } from '../database/structure';
+import { PostResponse } from '.';
 import { Request, Response } from 'express';
 import { addTicketToProject } from '../database/functions/tickets';
 

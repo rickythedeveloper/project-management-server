@@ -1,6 +1,6 @@
 import { Pool, PoolClient } from 'pg';
-import { RelationalTable, UserProject } from '../structure';
-import { checkForOne, pool } from '.';
+import { DataTable, RelationalTable, UserAccount, UserProject } from '../structure';
+import { checkForOne, makeMultiQuery, pool } from '.';
 
 const tableName = RelationalTable[RelationalTable.user_projects];
 
@@ -21,4 +21,21 @@ export const addUserProjectPair = async (user_id: number, project_id: number, ex
 	);
 	const newUserProject = checkForOne(addPairResult.rows, 'new user-project pair');
 	return newUserProject;
+};
+
+export const getUsersForProject = async (projectID: number): Promise<UserAccount[]> => {
+	return makeMultiQuery(async (client) => {
+		const userIDsResults = await client.query<Pick<UserProject, 'user_id'>>(`SELECT user_id FROM ${RelationalTable[RelationalTable.user_projects]} WHERE project_id=$1`, [projectID]);
+		const userIDs = userIDsResults.rows.map(row => row.user_id);
+
+		if (userIDs.length === 0) return [];
+
+		let usersQueryString = `SELECT * FROM ${DataTable[DataTable.user_accounts]} WHERE id in (`;
+		usersQueryString = usersQueryString.concat(userIDs.map((id, index) => `$${index + 1}`).join(', '));
+		usersQueryString = usersQueryString.concat(')');
+		console.log(usersQueryString);
+		const usersResults = await client.query<UserAccount>(usersQueryString, userIDs);
+		const users = usersResults.rows;
+		return users;
+	});
 };

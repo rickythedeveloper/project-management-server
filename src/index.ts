@@ -18,7 +18,7 @@ app.get('/', (req, res) => {
 });
 
 app.post('/users', usersAPI.post);
-app.get('/users', (req, res) => { dataTableAPI.getAll(DataTable.user_accounts, res); });
+app.get('/users', (req, res) => { usersAPI.getAll(req, res); });
 app.get('/users/:id', (req, res) => { dataTableAPI.getOne(DataTable.user_accounts, req, res); });
 app.put('/users/:id', (req, res) => { dataTableAPI.edit(DataTable.user_accounts, ['id'], req, res); });
 app.delete('/users/:id', (req, res) => { dataTableAPI.del(DataTable.user_accounts, req, res); });

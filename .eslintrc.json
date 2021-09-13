@@ -57,6 +57,11 @@
                 }
             }
         ],
-        "sort-imports": "error"
+        "sort-imports": [
+            "error",
+            {
+                "ignoreDeclarationSort": true
+            }
+        ]
     }
 }

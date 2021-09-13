@@ -28,6 +28,10 @@ app.put('/projects/:id', projectsAPI.edit);
 app.delete('/projects/:id', projectsAPI.del);
 
 app.post('/tickets', ticketsAPI.post);
+app.get('/tickets', ticketsAPI.getAll);
+app.get('/tickets/:id', ticketsAPI.getOne);
+app.put('/tickets/:id', ticketsAPI.edit);
+app.delete('/tickets/:id', ticketsAPI.del);
 
 app.post('/metrics', metricsAPI.post);
 

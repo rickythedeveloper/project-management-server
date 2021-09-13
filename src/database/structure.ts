@@ -1,13 +1,18 @@
-export enum Table {
+export enum DataTable {
 	user_accounts,
-	user_data,
+	// user_data,
 	projects,
 	tickets,
 	metrics,
 	metric_options,
+}
+
+export enum RelationalTable {
 	user_projects,
 	ticket_assignees,
 }
+
+export type Table = DataTable | RelationalTable;
 
 export interface UserAccount {
 	id: number;
@@ -56,15 +61,16 @@ export interface TicketAssignee {
 	assignee_user_id: number;
 }
 
-export type TableProperty<T extends Table> =
-	T extends Table.user_accounts ? UserAccount :
-		T extends Table.projects ? Project :
-			T extends Table.tickets ? Ticket :
-				T extends Table.metrics ? Metric:
-					T extends Table.metric_options ? MetricOption:
-						T extends Table.user_projects ? UserProject:
-							T extends Table.ticket_assignees ? TicketAssignee:
-								TicketAssignee;
+export type DataTableProperty<T extends DataTable> =
+	T extends DataTable.user_accounts ? UserAccount :
+		T extends DataTable.projects ? Project :
+			T extends DataTable.tickets ? Ticket :
+				T extends DataTable.metrics ? Metric:
+					T extends DataTable.metric_options ? MetricOption: MetricOption;
+
+export type RelationalTableProperty<T extends RelationalTable> =
+	T extends RelationalTable.user_projects ? UserProject:
+		T extends RelationalTable.ticket_assignees ? TicketAssignee: TicketAssignee;
 
 export type OurQueryResultRow = UserAccount | Project | Ticket | Metric | MetricOption | UserProject | TicketAssignee | { [column: string]: string } | { [column: string]: number };
 export type OmitID<T> = Omit<T, 'id'>;

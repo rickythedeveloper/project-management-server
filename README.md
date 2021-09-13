@@ -30,10 +30,10 @@ Run the following.
 ### Checking the API from terminal / browser
 Method | Command
 :-: | :-
-GET | Go to http://localhost:8000/whatever
-POST | `$ curl -X POST http://localhost:8000/whatever -d "data=some data"`
-PUT | `$ curl -X PUT http://localhost:8000/whatever -d "data=some data"`
-DELETE | `$ curl -X DELETE http://localhost:8000/whatever`
+GET | Go to http://localhost:8000/category or http://localhost:8000/category/id
+POST | `$ curl -X POST http://localhost:8000/category -d "data=some data"`
+PUT | `$ curl -X PUT http://localhost:8000/category/id -d "data=some data"`
+DELETE | `$ curl -X DELETE http://localhost:8000/category/id`
 
 ### Miscellaneous
 #### How to

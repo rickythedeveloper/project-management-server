@@ -1,4 +1,4 @@
-import { OmitID, OurQueryResultRow, Table, TableProperty } from '../structure';
+import { DataTable, DataTableProperty, OmitID, OurQueryResultRow } from '../structure';
 import { Pool, PoolClient } from 'pg';
 import { PROD } from '../../constants';
 
@@ -12,8 +12,8 @@ export const checkForOne = <T extends OurQueryResultRow>(rows: T[], title :strin
 	return rows[0];
 };
 
-export const rowWithIDExists = async (table: Table, id: number): Promise<boolean> => {
-	const results = await pool.query(`SELECT * FROM ${Table[table]} WHERE id=$1`, [id]);
+export const rowWithIDExists = async (table: DataTable, id: number): Promise<boolean> => {
+	const results = await pool.query(`SELECT * FROM ${DataTable[table]} WHERE id=$1`, [id]);
 	return results.rows.length === 1;
 };
 
@@ -32,10 +32,28 @@ export const makeMultiQuery = async <T>(queries: (client: PoolClient) => Promise
 	}
 };
 
-export const editRow = async <T extends Table>(table: T, id: number, properties: Partial<OmitID<TableProperty<T>>>): Promise<void> => {
-	if (!await rowWithIDExists(table, id)) throw new Error(`Cannot update a ${Table[table]} that does not exist`);
+export const getRows = async <T extends DataTable>(table: T, IDs?: number[]): Promise<DataTableProperty<T>[]> => {
+	if (IDs === undefined) {
+		const results = await pool.query<DataTableProperty<T>>(`SELECT * FROM ${DataTable[table]}`);
+		return results.rows;
+	} else {
+		let idString = '';
+		for (let i = 1; i <= IDs.length; i++) {
+			idString = idString.concat(`$${i}`);
+			if (i < IDs.length) idString = idString.concat(', ');
+		}
+		const results = await pool.query<DataTableProperty<T>>(`SELECT * FROM ${DataTable[table]} WHERE id in (${idString})`, IDs);
+		if (IDs.length !== results.rows.length) {
+			console.log(`Requested projects with IDs ${IDs} but only got ${results.rows.map(row => row.id)}`);
+		}
+		return results.rows;
+	}
+};
 
-	let queryString = `UPDATE ${Table[table]} SET `;
+export const editRow = async <T extends DataTable>(table: T, id: number, properties: Partial<OmitID<DataTableProperty<T>>>): Promise<void> => {
+	if (!await rowWithIDExists(table, id)) throw new Error(`Cannot update a ${DataTable[table]} that does not exist`);
+
+	let queryString = `UPDATE ${DataTable[table]} SET `;
 	const values: string[] = [];
 	const entries = Object.entries(properties);
 	entries.forEach((entry, index) => {
@@ -52,8 +70,8 @@ export const editRow = async <T extends Table>(table: T, id: number, properties:
 	await pool.query(queryString, values);
 };
 
-export const deleteRow = async <T extends Table>(table: T, id: number): Promise<void> => {
+export const deleteRow = async <T extends DataTable>(table: T, id: number): Promise<void> => {
 	if (!await rowWithIDExists(table, id))
-		throw new Error(`Cannot delete a ${Table[table]} that does not exist.`);
-	pool.query(`DELETE FROM ${Table[table]} WHERE id=$1`, [id]);
+		throw new Error(`Cannot delete a ${DataTable[table]} that does not exist.`);
+	pool.query(`DELETE FROM ${DataTable[table]} WHERE id=$1`, [id]);
 };

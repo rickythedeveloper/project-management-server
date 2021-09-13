@@ -18,16 +18,16 @@ app.get('/', (req, res) => {
 });
 
 app.post('/users', usersAPI.post);
-app.delete('/users/:id', usersAPI.del);
-app.put('/users/:id', usersAPI.put);
-app.get('/users', usersAPI.getAll);
-app.get('/users/:id', usersAPI.getOne);
+app.get('/users', (req, res) => { dataTableAPI.getAll(DataTable.user_accounts, res); });
+app.get('/users/:id', (req, res) => { dataTableAPI.getOne(DataTable.user_accounts, req, res); });
+app.put('/users/:id', (req, res) => { dataTableAPI.edit(DataTable.user_accounts, ['id'], req, res); });
+app.delete('/users/:id', (req, res) => { dataTableAPI.del(DataTable.user_accounts, req, res); });
 
 app.post('/projects', projectsAPI.post);
-app.get('/projects', projectsAPI.getAll);
-app.get('/projects/:id', projectsAPI.getOne);
-app.put('/projects/:id', projectsAPI.edit);
-app.delete('/projects/:id', projectsAPI.del);
+app.get('/projects', (req, res) => { dataTableAPI.getAll(DataTable.projects, res); });
+app.get('/projects/:id', (req, res) => { dataTableAPI.getOne(DataTable.projects, req, res); });
+app.put('/projects/:id', (req, res) => { dataTableAPI.edit(DataTable.projects, ['id'], req, res); });
+app.delete('/projects/:id', (req, res) => { dataTableAPI.del(DataTable.projects, req, res); });
 
 app.post('/tickets', ticketsAPI.post);
 app.get('/tickets', (req, res) => { dataTableAPI.getAll(DataTable.tickets, res); });

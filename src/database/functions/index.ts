@@ -64,9 +64,6 @@ export const editRow = async <T extends DataTable>(table: T, id: number, propert
 	});
 	queryString = queryString.concat(`WHERE id=$${entries.length + 1}`);
 	values.push(String(id));
-
-	console.log('query string', queryString);
-
 	await pool.query(queryString, values);
 };
 

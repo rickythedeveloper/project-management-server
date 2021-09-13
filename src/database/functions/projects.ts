@@ -1,5 +1,5 @@
 import { DataTable, OmitID, Project, UserProject } from '../structure';
-import { checkForOne, deleteRow, editRow, getRows, makeMultiQuery, pool, rowWithIDExists } from '.';
+import { checkForOne, makeMultiQuery, pool, rowWithIDExists } from '.';
 import { addUserProjectPair } from './userProjects';
 
 export const addProjectToUser = async (project: OmitID<Project>): Promise<{ project: Project; userProject: UserProject }> => {
@@ -20,20 +20,3 @@ export const addProjectToUser = async (project: OmitID<Project>): Promise<{ proj
 		return { project: newProject, userProject: newUserProject };
 	});
 };
-
-export const getProject = async (id: number): Promise<Project> => {
-	const projects = await getRows(DataTable.projects, [id]);
-	if (projects.length !== 1) throw new Error(`Failed to find a project with id ${id}`);
-	return projects[0];
-};
-
-export const getProjects = async (
-	IDs?: number[],
-): Promise<Project[]> => getRows(DataTable.projects, IDs);
-
-export const editProject = async (
-	id: number,
-	properties: Partial<OmitID<Project>>,
-) => editRow(DataTable.projects, id, properties);
-
-export const deleteProject = async (id: number) => deleteRow(DataTable.projects, id);

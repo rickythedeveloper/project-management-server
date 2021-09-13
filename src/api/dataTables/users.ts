@@ -1,7 +1,7 @@
-import { PostResponse } from '.';
-import { OmitID, UserAccount } from '../database/structure';
+import { PostResponse } from '..';
+import { OmitID, UserAccount } from '../../database/structure';
 import { Request, Response } from 'express';
-import { addUser } from '../database/functions/users';
+import { addUser } from '../../database/functions/users';
 
 export const post = async (
 	req: Request<{}, PostResponse<UserAccount>, OmitID<UserAccount>>,

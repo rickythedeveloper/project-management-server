@@ -1,7 +1,7 @@
-import { Metric, OmitID } from '../database/structure';
+import { Metric, OmitID } from '../../database/structure';
 import { Request, Response } from 'express';
-import { PostResponse } from '.';
-import { addMetricToProject } from '../database/functions/metrics';
+import { PostResponse } from '..';
+import { addMetricToProject } from '../../database/functions/metrics';
 
 export const post = async (req: Request<{}, PostResponse<Metric>, OmitID<Metric>>, res: Response<PostResponse<Metric>>) => {
 	try {

@@ -1,7 +1,7 @@
-import { DataTable, DataTableProperty } from '../database/structure';
+import { DataTable, DataTableProperty } from '../../database/structure';
 import { Request, Response } from 'express';
-import { deleteRow, editRow, getRows } from '../database/functions';
-import { DeleteResponse, GetResponse, PutResponse } from '.';
+import { deleteRow, editRow, getRows } from '../../database/functions';
+import { DeleteResponse, GetResponse, PutResponse } from '..';
 
 export const getAll = async <T extends DataTable>(
 	table: T,

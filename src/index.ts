@@ -1,10 +1,10 @@
-import * as metricOptionsAPI from './api/metricOptions';
-import * as metricsAPI from './api/metrics';
-import * as projectsAPI from './api/projects';
-import * as ticketAssigneesAPI from './api/ticketAssignees';
-import * as ticketsAPI from './api/tickets';
-import * as usersAPI from './api/users';
-import * as dataTableAPI from './api/dataTable';
+import * as dataTableAPI from './api/dataTables';
+import * as metricOptionsAPI from './api/dataTables/metricOptions';
+import * as metricsAPI from './api/dataTables/metrics';
+import * as projectsAPI from './api/dataTables/projects';
+import * as ticketAssigneesAPI from './api/relationalTables/ticketAssignees';
+import * as ticketsAPI from './api/dataTables/tickets';
+import * as usersAPI from './api/dataTables/users';
 import { PORT } from './constants';
 import express from 'express';
 import { DataTable } from './database/structure';

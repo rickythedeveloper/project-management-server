@@ -27,26 +27,13 @@ Run the following.
 `$ git push heroku main` (if you want to push local main).\
 `$ git push heroku whatever_local_branch:main` (if you want to push a local branch other than main)
 
-### Checking the API from terminal
-You can try the following to simulate requests.
-- add a user
-	`$ curl -d "username=rickythedeveloper&password_hash=123456789012345678901234567890123456789012345678901234567890&password_salt=salthere&name=rickykawagishi" -X POST http://localhost:8000/users`
-- delete a user
-	`$ curl -X "DELETE" http://localhost:8000/users/1`
-- edit a user's username or name
-	`$ curl -X PUT -d "username=newusername&name=newname" http://localhost:8000/users/1`
-- get a user / users
-	Go to http://localhost:8000/users/1 or http://localhost:8000/users
-- add a project to a user
-	`$ curl -d "name=some project&owner_user_id=1" -X POST http://localhost:8000/projects`
-- add a ticket to a project
-	`$ curl -d "project_id=3&created_user_id=1&title=some ticket man" -X POST http://localhost:8000/tickets`
-- add a metric to a project
-	`$ curl -d "project_id=3&title=some metric" -X POST http://localhost:8000/metrics`
-- add a metric option to a metric
-	`$ curl -d "metric_id=1&option_string=some metric option" -X POST http://localhost:8000/metric-options`
-- add a ticket assignee pair
-	`$ curl -d "ticket_id=1&assignee_user_id=1" -X POST http://localhost:8000/ticket-assignees`
+### Checking the API from terminal / browser
+Method | Command
+:-: | :-
+GET | Go to http://localhost:8000/whatever
+POST | `$ curl -X POST http://localhost:8000/whatever -d "data=some data"`
+PUT | `$ curl -X PUT http://localhost:8000/whatever -d "data=some data"`
+DELETE | `$ curl -X DELETE http://localhost:8000/whatever`
 
 ### Miscellaneous
 #### How to

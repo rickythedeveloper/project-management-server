@@ -1,4 +1,4 @@
-import { OurQueryResultRow, Table } from '../structure';
+import { OmitID, OurQueryResultRow, Table, TableProperty } from '../structure';
 import { Pool, PoolClient } from 'pg';
 import { PROD } from '../../constants';
 
@@ -32,3 +32,28 @@ export const makeMultiQuery = async <T>(queries: (client: PoolClient) => Promise
 	}
 };
 
+export const editRow = async <T extends Table>(table: T, id: number, properties: Partial<OmitID<TableProperty<T>>>): Promise<void> => {
+	if (!await rowWithIDExists(table, id)) throw new Error(`Cannot update a ${Table[table]} that does not exist`);
+
+	let queryString = `UPDATE ${Table[table]} SET `;
+	const values: string[] = [];
+	const entries = Object.entries(properties);
+	entries.forEach((entry, index) => {
+		queryString = queryString.concat(`${entry[0]}=$${index + 1}`);
+		if (index < entries.length - 1) queryString = queryString.concat(',');
+		queryString = queryString.concat(' ');
+		values.push(String(entry[1]));
+	});
+	queryString = queryString.concat(`WHERE id=$${entries.length + 1}`);
+	values.push(String(id));
+
+	console.log('query string', queryString);
+
+	await pool.query(queryString, values);
+};
+
+export const deleteRow = async <T extends Table>(table: T, id: number): Promise<void> => {
+	if (!await rowWithIDExists(table, id))
+		throw new Error(`Cannot delete a ${Table[table]} that does not exist.`);
+	pool.query(`DELETE FROM ${Table[table]} WHERE id=$1`, [id]);
+};

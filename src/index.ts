@@ -22,6 +22,10 @@ app.get('/users', usersAPI.getAll);
 app.get('/users/:id', usersAPI.getOne);
 
 app.post('/projects', projectsAPI.post);
+app.get('/projects', projectsAPI.getAll);
+app.get('/projects/:id', projectsAPI.getOne);
+app.put('/projects/:id', projectsAPI.edit);
+app.delete('/projects/:id', projectsAPI.del);
 
 app.post('/tickets', ticketsAPI.post);
 

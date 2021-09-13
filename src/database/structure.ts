@@ -56,5 +56,15 @@ export interface TicketAssignee {
 	assignee_user_id: number;
 }
 
+export type TableProperty<T extends Table> =
+	T extends Table.user_accounts ? UserAccount :
+		T extends Table.projects ? Project :
+			T extends Table.tickets ? Ticket :
+				T extends Table.metrics ? Metric:
+					T extends Table.metric_options ? MetricOption:
+						T extends Table.user_projects ? UserProject:
+							T extends Table.ticket_assignees ? TicketAssignee:
+								TicketAssignee;
+
 export type OurQueryResultRow = UserAccount | Project | Ticket | Metric | MetricOption | UserProject | TicketAssignee | { [column: string]: string } | { [column: string]: number };
 export type OmitID<T> = Omit<T, 'id'>;

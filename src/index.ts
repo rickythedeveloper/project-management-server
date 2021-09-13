@@ -4,8 +4,10 @@ import * as projectsAPI from './api/projects';
 import * as ticketAssigneesAPI from './api/ticketAssignees';
 import * as ticketsAPI from './api/tickets';
 import * as usersAPI from './api/users';
+import * as dataTableAPI from './api/dataTable';
 import { PORT } from './constants';
 import express from 'express';
+import { DataTable } from './database/structure';
 
 const app = express();
 
@@ -28,10 +30,10 @@ app.put('/projects/:id', projectsAPI.edit);
 app.delete('/projects/:id', projectsAPI.del);
 
 app.post('/tickets', ticketsAPI.post);
-app.get('/tickets', ticketsAPI.getAll);
-app.get('/tickets/:id', ticketsAPI.getOne);
-app.put('/tickets/:id', ticketsAPI.edit);
-app.delete('/tickets/:id', ticketsAPI.del);
+app.get('/tickets', (req, res) => { dataTableAPI.getAll(DataTable.tickets, res); });
+app.get('/tickets/:id', (req, res) => { dataTableAPI.getOne(DataTable.tickets, req, res); });
+app.put('/tickets/:id', (req, res) => { dataTableAPI.edit(DataTable.tickets, ['project_id', 'created_user_id', 'index_in_project'], req, res); });
+app.delete('/tickets/:id', (req, res) => { dataTableAPI.del(DataTable.tickets, req, res); });
 
 app.post('/metrics', metricsAPI.post);
 
